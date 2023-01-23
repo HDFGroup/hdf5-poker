@@ -1,0 +1,27 @@
+
+/* HDF5 message types */
+
+var MSG_NIL              =  0UB,
+    MSG_DATASPACE        =  1UB,
+    MSG_LINK_INFO        =  2UB,
+    MSG_DATATYPE         =  3UB,
+    MSG_FILL_VALUE_OLD   =  4UB,
+    MSG_FILL_VALUE       =  5UB,
+    MSG_LINK             =  6UB,
+    MSG_EXTERNAL_DATA    =  7UB,
+    MSG_DATA_LAYOUT      =  8UB,
+    MSG_BOGUS            =  9UB,
+    MSG_GROUP_INFO       = 10UB,
+    MSG_FILTER_PIPE      = 11UB,
+    MSG_ATTRIBUTE        = 12UB,
+    MSG_OBJ_COMMENT      = 13UB,
+    MSG_OBJ_MOD_TIME_OLD = 14UB,
+    MSG_SOHM_TABLE       = 15UB,
+    MSG_OHDR_CONT        = 16UB,
+    MSG_SYMBOL_TABLE     = 17UB,
+    MSG_OBJ_MOD_TIME     = 18UB,
+    MSG_BTREE_K_VALUES   = 19UB,
+    MSG_DRIVER_INFO      = 20UB,
+    MSG_ATTRIBUTE_INFO   = 21UB,
+    MSG_OBJ_REF_COUNT    = 22UB,
+    MSG_FILE_SPACE_INFO  = 23UB;

@@ -1,0 +1,93 @@
+
+type HDF5_Timestamps =
+  struct
+  {
+    little uint<32> access;
+    little uint<32> modification;
+    little uint<32> change;
+    little uint<32> birth;
+  };
+
+type HDF5_AttrPhase =
+  struct
+  {
+    little uint<16> max_compact;
+    little uint<16> min_dense;
+  };
+
+type HDF5_OHDR_v2 =
+  struct
+  {
+    byte[4] magic = ['O','H','D','R'];
+    uint<8> vers  = 2;
+    byte    flags;
+    HDF5_Timestamps timestamps if flags & 1 <<. 5;
+    HDF5_AttrPhase attr_phase if flags & 1 <<. 4;
+  };
+
+type HDF5_OHDR_Messages_v2 =
+  struct
+  {
+    HDF5_OHDR_v2 hdr;
+
+    var _chunk0_bytes  = 1 <<. (hdr.flags & 3U);
+    byte[_chunk0_bytes] chunk0_size_bytes;
+
+    fun bytes2int = (byte[] data) uint<64>:
+    {
+      var temp = data[:];
+      reverse(temp);
+      return temp as uint<64>;
+    }
+
+    var chunk0_size = bytes2int(chunk0_size_bytes);
+    byte[chunk0_size] messages;
+
+    // TODO: handle the gap
+
+    byte[4] checksum;
+
+    var order_tracked_p  = hdr.flags & 4U;
+    type HDF5_OHDR_Message_v2 =
+      struct
+      {
+        byte msg_type;
+        little uint<16> msg_size;
+        byte msg_flags;
+        little uint<16> crt_ord if order_tracked_p;
+        byte[] msg_bytes;
+      };
+
+    method get_messages = HDF5_OHDR_Message_v2[]:
+    {
+      var i = 0, msg_count = 0, gap = 0, msg_const = (order_tracked_p ? 6 : 4);
+      while (i + msg_const <= chunk0_size)
+      {
+        var sz = [messages[i+2],messages[i+1]] as uint<16>;
+        ++msg_count;
+        i = i + sz + msg_const;
+      }
+      gap = chunk0_size - i;
+      //printf("%u64d\n", gap);
+      //printf("%u64d\n", msg_count);
+
+      var result = HDF5_OHDR_Message_v2[msg_count]();
+      i = 0;
+      msg_count = 0;
+      while (i + msg_const < chunk0_size)
+      {
+        result[msg_count].msg_type = messages[i];
+        // TODO: handle OHDR continuation messages
+        var msg_size = [messages[i+2], messages[i+1]] as uint<16>;
+        result[msg_count].msg_size = msg_size;
+        result[msg_count].msg_flags = messages[i+3];
+        if (order_tracked_p)
+          result[msg_count].crt_ord = [messages[i+5],messages[i+4]] as uint<16>;
+        result[msg_count].msg_bytes += messages[i+msg_const:i+msg_const+msg_size];
+        ++msg_count;
+        i = i + msg_const + msg_size;
+      }
+
+      return result[0:msg_count];
+    }
+  };

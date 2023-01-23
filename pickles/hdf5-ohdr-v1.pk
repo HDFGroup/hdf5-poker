@@ -1,0 +1,51 @@
+
+type HDF5_OHDR_v1 =
+  struct
+  {
+    uint<8>         vers = 1;
+    byte;           /* Reserved */
+    little uint<16> msg_cnt;
+    little uint<32> ref_cnt;
+    little uint<32> hdr_size;
+    byte[4];        /* Reserved */
+  };
+
+type HDF5_OHDR_Messages_v1 =
+  struct
+  {
+    HDF5_OHDR_v1       hdr;
+    byte[hdr.hdr_size] messages;
+
+    type HDF5_OHDR_Message_v1 =
+      struct
+      {
+        byte[2] msg_type;
+        little uint<16> msg_size;
+        byte msg_flags;
+        byte[] msg_bytes;
+      };
+
+    method get_messages = HDF5_OHDR_Message_v1[]:
+    {
+      var result = HDF5_OHDR_Message_v1[hdr.msg_cnt]();
+      var imsg = 0, off = 0;
+      while (imsg < hdr.msg_cnt)
+      {
+        result[imsg].msg_type = messages[off:off+2];
+        // little endian!
+        var msg_size = [messages[off+3], messages[off+2]] as uint<16>;
+        result[imsg].msg_size = msg_size;
+        result[imsg].msg_flags = messages[off+4];
+        result[imsg].msg_bytes += messages[off+8:off+8+msg_size];
+        off += msg_size;
+
+        // TODO: handle continuation messages
+        if (result[imsg].msg_type == [16UB, 0UB])
+          break;
+
+        ++imsg;
+      }
+
+      return result[0:imsg+1];
+    }
+  };

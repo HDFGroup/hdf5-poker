@@ -1,0 +1,23 @@
+
+load "hdf5-sblk.pk";
+load "hdf5-ohdr.pk";
+
+type HDF5_Root =
+  union
+  {
+    HDF5_OHDR_Messages_v1 v1;
+    HDF5_OHDR_Messages_v2 v2;
+  };
+
+type HDF5_File =
+  struct
+  {
+    HDF5_Superblock sblk;
+
+    method get_root = HDF5_Root:
+    {
+      return sblk.vers < 2 ?
+        HDF5_Root { v1 = HDF5_OHDR_Messages_v1 @ sblk.root_ohdr_addr } :
+        HDF5_Root { v2 = HDF5_OHDR_Messages_v2 @ sblk.root_ohdr_addr };
+    }
+  };

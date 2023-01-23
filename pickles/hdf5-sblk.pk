@@ -1,0 +1,68 @@
+
+type HDF5_Superblock =
+  struct
+  {
+    byte[8] magic = [0x89UB,'H','D','F','\r','\n',0x1aUB,'\n'];
+    uint<8> vers : vers < 4;
+
+    union
+    {
+      // versions 0 and 1
+      little struct
+      {
+        uint<8>  fsp_vers  = 0;
+        uint<8>  stbl_vers = 0;
+        byte;    /* Reserved */
+        uint<8>  shm_vers  = 0;
+        uint<8>  offset_b = 8;
+        uint<8>  size_b = 8;
+        byte;    /* Reserved */
+        uint<16> glk;
+        uint<16> gik;
+        byte[4]  flags;
+
+        uint<16> isik : isik > 0      if vers == 1;
+        byte[2] res = [0x00UB,0x00UB] if vers == 1;
+
+        offset<uint<64>,B> base;
+        offset<uint<64>,B> fsp;
+        offset<uint<64>,B> eof;
+        offset<uint<64>,B> drv_blk;
+        offset<uint<64>,B> lnk_nm_off;
+        offset<uint<64>,B> ohdr_addr;
+
+        byte[4]        cache_t;
+        byte[4];       /* Reserved */
+        byte[16]       scratch;
+      } v01 : vers < 2;
+
+      // versions 2 and 3
+      little struct
+      {
+        uint<8>        offset_b = 8;
+        uint<8>        size_b = 8;
+        byte           flags;
+        offset<uint<64>,B> base;
+        offset<uint<64>,B> sblk_ext;
+        offset<uint<64>,B> eof;
+        offset<uint<64>,B> root_ohdr;
+        byte[4]        chk;
+      } v23 : vers > 1 && vers < 4;
+    } sblk;
+
+    method offset_bits = uint<8>:
+    {
+      return (vers < 2) ? sblk.v01.offset_b : sblk.v23.offset_b;
+    }
+
+    method size_bits = uint<8>:
+    {
+      return (vers < 2) ? sblk.v01.size_b : sblk.v23.size_b;
+    }
+
+    method root_ohdr_addr = offset<uint64,B>:
+    {
+      return (vers < 2) ? sblk.v01.base + sblk.v01.ohdr_addr :
+                          sblk.v23.base + sblk.v23.root_ohdr;
+    }
+  };
