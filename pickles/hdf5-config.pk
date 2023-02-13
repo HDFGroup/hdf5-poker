@@ -1,0 +1,28 @@
+
+var hdf5_config_debug = 0;
+
+type Hdf5_Config_UInt =
+  struct
+  {
+    uint<32> value;
+    string name;
+    string doc;
+  };
+
+type Hdf5_Config =
+  struct
+  {
+    type Enum =
+      struct
+      {
+        string class;
+        Hdf5_Config_UInt[] entries;
+      };
+
+    Enum[] common_enums;
+  };
+
+/* The global database `hdf5_config' is populated by the several
+   hdf5-*.pk pickles as they get loaded.  */
+
+var hdf5_config = Hdf5_Config {};
